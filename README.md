@@ -7,6 +7,9 @@ Ce README decrit tous les endpoints exposes par l'API, avec leurs regles d'acces
 - Local: `http://localhost:4000`
 - Production: URL Vercel du projet
 
+Note: selon l'environnement de deploiement/proxy, les endpoints peuvent etre exposes en
+`/auth/...` ou `/api/auth/...` (idem pour `/users` et `/suivi`).
+
 ## Authentification
 
 - Les routes protegees attendent un header HTTP:

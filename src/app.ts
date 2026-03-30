@@ -22,6 +22,11 @@ app.use("/auth", authRoutes);
 app.use("/users", usersRoutes);
 app.use("/suivi", suiviRoutes);
 
+// Compatibility prefix for environments/frontends that call routes under /api.
+app.use("/api/auth", authRoutes);
+app.use("/api/users", usersRoutes);
+app.use("/api/suivi", suiviRoutes);
+
 app.use(notFound);
 app.use(errorHandler);
 
