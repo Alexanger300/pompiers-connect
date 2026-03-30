@@ -17,6 +17,9 @@ app.use(express.json());
 app.get("/", (_req, res) => {
     res.json({ message: "API running" });
 });
+app.all("/", (_req, res) => {
+    res.status(405).json({ message: "Method not allowed. Use GET /" });
+});
 
 app.use("/auth", authRoutes);
 app.use("/users", usersRoutes);

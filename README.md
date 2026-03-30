@@ -101,6 +101,7 @@ Erreurs frequentes:
 - Description: authentifier un utilisateur
 - Auth: non
 - Roles: tous
+- Methode: `POST` uniquement (un `GET` retourne `405 Method not allowed`)
 
 Body JSON:
 
