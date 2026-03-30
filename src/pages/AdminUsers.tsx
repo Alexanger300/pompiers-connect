@@ -1,13 +1,12 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Plus, Pencil, Trash2, Users } from 'lucide-react';
+import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { User, UserRole } from '@/types';
 
@@ -58,77 +57,66 @@ const AdminUsers = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between flex-wrap gap-4">
+    <div className="px-4 py-5">
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-3xl font-bold text-foreground">Gestion des utilisateurs</h1>
-          <p className="text-muted-foreground mt-1">{users.length} utilisateurs enregistrés</p>
+          <h1 className="font-display text-2xl font-bold text-foreground">Utilisateurs</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">{users.length} comptes</p>
         </div>
-        <Button className="gradient-primary text-primary-foreground" onClick={openAdd}>
-          <Plus className="w-4 h-4 mr-2" />
-          Ajouter
+        <Button size="sm" className="gradient-primary text-primary-foreground" onClick={openAdd}>
+          <Plus className="w-4 h-4 mr-1" /> Ajouter
         </Button>
       </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-        <Card className="glass-card mt-8">
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nom</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Rôle</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map(user => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                    <TableCell>
-                      <Badge className={roleBadge[user.role]}>{user.role}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button size="sm" variant="ghost" onClick={() => openEdit(user)}>
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => handleDelete(user.id)}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </motion.div>
+      <div className="space-y-2 mt-5">
+        {users.map((user, i) => (
+          <motion.div key={user.id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}>
+            <Card className="glass-card">
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
+                      {user.name.split(' ').map(n => n[0]).join('')}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm text-foreground">{user.name}</p>
+                      <p className="text-[10px] text-muted-foreground">{user.email}</p>
+                    </div>
+                  </div>
+                  <Badge className={`${roleBadge[user.role]} text-[10px]`}>{user.role}</Badge>
+                </div>
+                <div className="flex gap-2 mt-2.5 justify-end">
+                  <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => openEdit(user)}>
+                    <Pencil className="w-3 h-3 mr-1" /> Modifier
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-destructive hover:text-destructive" onClick={() => handleDelete(user.id)}>
+                    <Trash2 className="w-3 h-3 mr-1" /> Supprimer
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
 
-      {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-[90vw] rounded-xl">
           <DialogHeader>
-            <DialogTitle className="font-display">{editingUser ? 'Modifier' : 'Ajouter'} un utilisateur</DialogTitle>
+            <DialogTitle className="font-display">{editingUser ? 'Modifier' : 'Ajouter'}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label>Nom complet</Label>
+          <div className="space-y-3 mt-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Nom</Label>
               <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Prénom Nom" />
             </div>
-            <div className="space-y-2">
-              <Label>Email</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Email</Label>
               <Input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="email@pompiers.fr" type="email" />
             </div>
-            <div className="space-y-2">
-              <Label>Rôle</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Rôle</Label>
               <Select value={form.role} onValueChange={(v: UserRole) => setForm(f => ({ ...f, role: v }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="stagiaire">Stagiaire</SelectItem>
                   <SelectItem value="superviseur">Superviseur</SelectItem>

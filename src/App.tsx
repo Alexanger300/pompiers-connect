@@ -29,21 +29,23 @@ const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="mobile-shell bg-background">
       {isAuthenticated && <Navbar />}
-      <Routes>
-        <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />} />
-        <Route path="/" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} />
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/calendrier" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
-        <Route path="/competences" element={<ProtectedRoute roles={['stagiaire']}><Skills /></ProtectedRoute>} />
-        <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-        <Route path="/superviseur" element={<ProtectedRoute roles={['superviseur']}><SupervisorSchedule /></ProtectedRoute>} />
-        <Route path="/admin/utilisateurs" element={<ProtectedRoute roles={['administrateur']}><AdminUsers /></ProtectedRoute>} />
-        <Route path="/admin/suivi" element={<ProtectedRoute roles={['administrateur']}><AdminTraining /></ProtectedRoute>} />
-        <Route path="/profil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      <main className={isAuthenticated ? "pb-20" : ""}>
+        <Routes>
+          <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />} />
+          <Route path="/" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/calendrier" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
+          <Route path="/competences" element={<ProtectedRoute roles={['stagiaire']}><Skills /></ProtectedRoute>} />
+          <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+          <Route path="/superviseur" element={<ProtectedRoute roles={['superviseur']}><SupervisorSchedule /></ProtectedRoute>} />
+          <Route path="/admin/utilisateurs" element={<ProtectedRoute roles={['administrateur']}><AdminUsers /></ProtectedRoute>} />
+          <Route path="/admin/suivi" element={<ProtectedRoute roles={['administrateur']}><AdminTraining /></ProtectedRoute>} />
+          <Route path="/profil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </main>
     </div>
   );
 };
