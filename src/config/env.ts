@@ -25,6 +25,13 @@ export const config = {
 
     // Session
     sessionExpiryDays: parseInt(getEnv("SESSION_EXPIRY_DAYS", "30"), 10),
+
+    // SMTP (email)
+    smtpHost: getEnv("SMTP_HOST"),
+    smtpPort: parseInt(getEnv("SMTP_PORT", "587"), 10),
+    smtpUser: getEnv("SMTP_USER"),
+    smtpPass: getEnv("SMTP_PASS"),
+    smtpFrom: getEnv("SMTP_FROM"),
 };
 
 // Validation
@@ -33,4 +40,7 @@ if (!Number.isInteger(config.port) || config.port <= 0 || config.port > 65535) {
 }
 if (!Number.isInteger(config.sessionExpiryDays) || config.sessionExpiryDays <= 0) {
     throw new Error("SESSION_EXPIRY_DAYS must be a positive integer");
+}
+if (!Number.isInteger(config.smtpPort) || config.smtpPort <= 0 || config.smtpPort > 65535) {
+    throw new Error("SMTP_PORT must be a valid port number (1-65535)");
 }

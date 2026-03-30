@@ -279,6 +279,35 @@ Erreurs frequentes:
 - `403` acces a un autre utilisateur
 - `404` utilisateur introuvable
 
+#### POST /users/:id/email
+
+- Description: envoyer un email a un utilisateur specifique
+- Auth: oui
+- Roles: `admin`, `superviseur`, ou proprietaire du compte (self)
+
+Body JSON:
+
+```json
+{
+	"subject": "Rappel",
+	"message": "Bonjour, merci de verifier votre dossier."
+}
+```
+
+Reponse 202:
+
+```json
+{
+	"message": "Email sent"
+}
+```
+
+Erreurs frequentes:
+
+- `400` subject/message manquants
+- `403` acces interdit
+- `404` utilisateur introuvable
+
 ### 4) Suivi de formation
 
 #### GET /suivi/formation-items

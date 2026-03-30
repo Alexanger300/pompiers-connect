@@ -1,4 +1,5 @@
 import { deleteUserById, findUserById, updateUserById } from "./users.repository";
+import { sendMailTo } from "../../utils/mailer";
 
 function createHttpError(status: number, message: string): never {
     throw { status, message };
@@ -40,4 +41,24 @@ export async function removeUser(id: number): Promise<void> {
     }
 
     await deleteUserById(id);
+}
+
+export async function sendEmailToUser(
+    id: number,
+    payload: { subject?: string; message?: string },
+): Promise<void> {
+    const subject = payload.subject?.trim();
+    const message = payload.message?.trim();
+
+    if (!subject || !message) {
+        createHttpError(400, "subject and message are required");
+    }
+
+    const user = await findUserById(id);
+
+    if (!user) {
+        createHttpError(404, "User not found");
+    }
+
+    await sendMailTo(user.email, subject, message);
 }
