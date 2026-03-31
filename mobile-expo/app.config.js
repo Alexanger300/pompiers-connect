@@ -1,4 +1,4 @@
-const path = require('path');
+﻿const path = require('path');
 const fs = require('fs');
 const dotenv = require('dotenv');
 
@@ -19,8 +19,7 @@ module.exports = ({ config }) => {
     'https://pompiers-connect.vercel.app';
   const apiUrl = String(apiUrlRaw).trim().replace(/\/$/, '');
 
-  const isLocalhostApi =
-    /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(apiUrl);
+  const isLocalhostApi = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(apiUrl);
   if (process.env.EAS_BUILD === 'true' && isLocalhostApi) {
     throw new Error(
       `Invalid EXPO_PUBLIC_API_URL for EAS build: ${apiUrl}. ` +
@@ -34,19 +33,12 @@ module.exports = ({ config }) => {
     config?.extra?.apiPrefix ||
     '';
 
-  const webAppUrl =
-    process.env.EXPO_PUBLIC_WEB_APP_URL ||
-    process.env.WEB_APP_URL ||
-    config?.extra?.webAppUrl ||
-    'https://pompiers-connect.vercel.app';
-
   return {
     ...config,
     extra: {
       ...(config.extra || {}),
       apiUrl,
       apiPrefix,
-      webAppUrl,
       eas: {
         ...(config.extra?.eas || {}),
       },

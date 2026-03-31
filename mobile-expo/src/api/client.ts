@@ -1,6 +1,17 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+﻿import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
-import type { AppNotification, Device, User } from '../types';
+import type {
+  AppNotification,
+  Device,
+  Disponibilite,
+  FormationItem,
+  NotificationStatus,
+  NotificationType,
+  Suivi,
+  SuiviAdminRow,
+  User,
+  UserRole,
+} from '../types';
 
 const ACCESS_TOKEN_KEY = 'pompiers_access_token';
 const REFRESH_TOKEN_KEY = 'pompiers_refresh_token';
@@ -28,9 +39,15 @@ function makeUrl(prefix: string, path: string) {
   return `${API_BASE_URL}${prefix}${normalizedPath}`;
 }
 
+function normalizeRole(rawRole: unknown): UserRole {
+  const role = String(rawRole ?? '').toLowerCase();
+  if (role === 'admin' || role === 'administrateur') return 'admin';
+  if (role === 'superviseur') return 'superviseur';
+  return 'agent';
+}
+
 async function fetchWithPrefix(path: string, init?: RequestInit) {
   const ordered = [preferredPrefix, ...CANDIDATE_PREFIXES.filter((p) => p !== preferredPrefix)];
-
   let lastResponse: Response | null = null;
 
   for (const prefix of ordered) {
@@ -40,8 +57,8 @@ async function fetchWithPrefix(path: string, init?: RequestInit) {
     } catch (error) {
       throw new Error(
         `Network request failed for ${makeUrl(prefix, path)}. ` +
-        `Vérifie que l'API est joignable depuis le téléphone (HTTPS ou IP locale correcte). ` +
-        `${error instanceof Error ? error.message : ''}`.trim(),
+          `Check API reachability from device (HTTPS or correct LAN IP). ` +
+          `${error instanceof Error ? error.message : ''}`.trim(),
       );
     }
 
@@ -49,6 +66,7 @@ async function fetchWithPrefix(path: string, init?: RequestInit) {
       preferredPrefix = prefix;
       return response;
     }
+
     lastResponse = response;
   }
 
@@ -59,11 +77,7 @@ async function parseResponse<T>(response: Response): Promise<T> {
   if (response.status === 204) return null as T;
 
   const data = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    throw new Error(data?.message || 'Erreur API');
-  }
-
+  if (!response.ok) throw new Error(data?.message || 'Erreur API');
   return data as T;
 }
 
@@ -112,7 +126,7 @@ async function refreshSession() {
   }
 }
 
-async function apiFetch<T>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
+export async function apiFetch<T>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
   const token = await storage.getAccessToken();
   const headers = new Headers(init.headers);
 
@@ -120,17 +134,13 @@ async function apiFetch<T>(path: string, init: RequestInit = {}, retry = true): 
     headers.set('Content-Type', 'application/json');
   }
 
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
-  }
+  if (token) headers.set('Authorization', `Bearer ${token}`);
 
   const response = await fetchWithPrefix(path, { ...init, headers });
 
   if (response.status === 401 && retry) {
     const newToken = await refreshSession();
-    if (newToken) {
-      return apiFetch<T>(path, init, false);
-    }
+    if (newToken) return apiFetch<T>(path, init, false);
   }
 
   return parseResponse<T>(response);
@@ -147,44 +157,40 @@ export const authApi = {
     const data = await parseResponse<{ user: User; accessToken: string; refreshToken: string }>(response);
     await storage.setTokens(data.accessToken, data.refreshToken);
 
-    // /auth/login may omit role in some backends; hydrate from /auth/me if available.
     try {
       const me = await apiFetch<User>('/auth/me');
-      const roleRaw = String((me as User).role ?? (data.user as User).role ?? '').toLowerCase();
-      const role =
-        roleRaw === 'admin' || roleRaw === 'administrateur'
-          ? 'admin'
-          : roleRaw === 'superviseur'
-            ? 'superviseur'
-            : 'agent';
-
-      const canonicalUser: User = {
-        ...data.user,
-        ...me,
-        role,
-      };
-
+      const canonicalUser: User = { ...data.user, ...me, role: normalizeRole(me.role ?? data.user.role) };
       await storage.setUser(canonicalUser);
       return canonicalUser;
     } catch {
-      const roleRaw = String((data.user as User).role ?? '').toLowerCase();
-      const role =
-        roleRaw === 'admin' || roleRaw === 'administrateur'
-          ? 'admin'
-          : roleRaw === 'superviseur'
-            ? 'superviseur'
-            : 'agent';
-
-      const fallbackUser: User = { ...data.user, role };
+      const fallbackUser: User = { ...data.user, role: normalizeRole(data.user.role) };
       await storage.setUser(fallbackUser);
       return fallbackUser;
     }
   },
 
+  async register(payload: {
+    email: string;
+    password: string;
+    nom: string;
+    prenom: string;
+    telephone?: string;
+    deviceName?: string;
+    role?: UserRole;
+  }) {
+    const data = await apiFetch<{ user: User; accessToken: string; refreshToken: string }>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    const created = { ...data.user, role: normalizeRole(data.user.role) } as User;
+    return created;
+  },
+
   async me() {
     const user = await apiFetch<User>('/auth/me');
-    await storage.setUser(user);
-    return user;
+    const normalized = { ...user, role: normalizeRole(user.role) } as User;
+    await storage.setUser(normalized);
+    return normalized;
   },
 
   async logout() {
@@ -203,27 +209,116 @@ export const authApi = {
   },
 };
 
+export const usersApi = {
+  list() {
+    return apiFetch<User[]>('/users');
+  },
+  getById(id: number) {
+    return apiFetch<User>(`/users/${id}`);
+  },
+  update(id: number, payload: Partial<Pick<User, 'nom' | 'prenom' | 'email' | 'telephone'>>) {
+    return apiFetch<User>(`/users/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+  updateRole(id: number, role: UserRole) {
+    return apiFetch<User>(`/users/${id}/role`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role }),
+    });
+  },
+  remove(id: number) {
+    return apiFetch<void>(`/users/${id}`, { method: 'DELETE' });
+  },
+};
+
 export const devicesApi = {
   list() {
     return apiFetch<Device[]>('/devices');
   },
-
   upsert(payload: { platform: 'android' | 'ios'; pushToken: string; deviceName?: string }) {
     return apiFetch<Device>('/devices', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
   },
-
   remove(id: number) {
-    return apiFetch(`/devices/${id}`, {
-      method: 'DELETE',
-    });
+    return apiFetch<void>(`/devices/${id}`, { method: 'DELETE' });
   },
 };
 
 export const notificationsApi = {
-  list() {
-    return apiFetch<AppNotification[]>('/notifications');
+  list(filters?: { type?: NotificationType; status?: NotificationStatus }) {
+    const params = new URLSearchParams();
+    if (filters?.type) params.set('type', filters.type);
+    if (filters?.status) params.set('status', filters.status);
+    const suffix = params.toString() ? `?${params.toString()}` : '';
+    return apiFetch<AppNotification[]>(`/notifications${suffix}`);
+  },
+  sendTargeted(payload: { recipientUserIds: number[]; title: string; message: string; data?: Record<string, unknown> }) {
+    return apiFetch<{ message: string; id: number; recipients: number }>('/notifications/targeted', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  sendBroadcast(payload: { title: string; message: string; data?: Record<string, unknown> }) {
+    return apiFetch<{ message: string; id: number; recipients: number }>('/notifications/broadcast', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  remove(id: number) {
+    return apiFetch<void>(`/notifications/${id}`, { method: 'DELETE' });
+  },
+};
+
+export const disponibilitesApi = {
+  list(filters?: { userId?: number; dateJour?: string }) {
+    const params = new URLSearchParams();
+    if (typeof filters?.userId === 'number') params.set('userId', String(filters.userId));
+    if (filters?.dateJour) params.set('dateJour', filters.dateJour);
+    const suffix = params.toString() ? `?${params.toString()}` : '';
+    return apiFetch<Disponibilite[]>(`/disponibilites${suffix}`);
+  },
+  create(payload: { dateJour: string; tranche: Disponibilite['tranche']; statut: Disponibilite['statut'] }) {
+    return apiFetch<Disponibilite>('/disponibilites', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  update(id: number, payload: Partial<Pick<Disponibilite, 'dateJour' | 'tranche' | 'statut'>>) {
+    return apiFetch<Disponibilite>(`/disponibilites/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+  validate(id: number) {
+    return apiFetch<Disponibilite>(`/disponibilites/${id}/validate`, { method: 'PATCH' });
+  },
+  reject(id: number) {
+    return apiFetch<Disponibilite>(`/disponibilites/${id}/reject`, { method: 'PATCH' });
+  },
+};
+
+export const suiviApi = {
+  getFormationItems() {
+    return apiFetch<FormationItem[]>('/suivi/formation-items');
+  },
+  getMine() {
+    return apiFetch<Suivi[]>('/suivi/');
+  },
+  getAdmin(filters?: { userId?: number; estValide?: boolean }) {
+    const params = new URLSearchParams();
+    if (typeof filters?.userId === 'number') params.set('userId', String(filters.userId));
+    if (typeof filters?.estValide === 'boolean') params.set('estValide', String(filters.estValide));
+    const suffix = params.toString() ? `?${params.toString()}` : '';
+    return apiFetch<SuiviAdminRow[]>(`/suivi/admin${suffix}`);
+  },
+  getPending(filters?: { userId?: number }) {
+    const params = new URLSearchParams();
+    if (typeof filters?.userId === 'number') params.set('userId', String(filters.userId));
+    const suffix = params.toString() ? `?${params.toString()}` : '';
+    return apiFetch<SuiviAdminRow[]>(`/suivi/pending${suffix}`);
   },
 };
