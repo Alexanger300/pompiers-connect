@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+ï»¿import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { API_RUNTIME } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 
 export function LoginScreen() {
@@ -43,7 +44,7 @@ export function LoginScreen() {
         <View style={styles.brandWrap}>
           <Image source={require('../../assets/logo-pompiers-square.png')} style={styles.logo} />
           <Text style={styles.appTitle}>PompierApp</Text>
-          <Text style={styles.appSubTitle}>Sapeurs-Pompiers 77 ¡¤ Centre de secours de Chessy</Text>
+          <Text style={styles.appSubTitle}>Sapeurs-Pompiers 77 Â· Centre de secours de Chessy</Text>
         </View>
 
         <View style={styles.card}>
@@ -70,6 +71,7 @@ export function LoginScreen() {
           />
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
+          <Text style={styles.apiHint}>API: {API_RUNTIME.baseUrl}</Text>
 
           <Pressable style={styles.button} onPress={onSubmit} disabled={loading}>
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Se connecter</Text>}
@@ -178,5 +180,10 @@ const styles = StyleSheet.create({
     color: '#b91c1c',
     marginBottom: 6,
     fontSize: 12,
+  },
+  apiHint: {
+    color: '#64748b',
+    fontSize: 11,
+    marginBottom: 8,
   },
 });

@@ -53,13 +53,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string) => {
-    try {
-      const loggedUser = await authApi.login(email, password);
-      setUser(loggedUser);
-      return true;
-    } catch {
-      return false;
-    }
+    const loggedUser = await authApi.login(email, password);
+    setUser(loggedUser);
+    return true;
   };
 
   const logout = async () => {
@@ -100,6 +96,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  if (!ctx) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
   return ctx;
 };

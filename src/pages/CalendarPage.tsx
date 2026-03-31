@@ -1,45 +1,88 @@
-import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
-import { Sun, Moon, Check } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sun, Moon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-
-interface ShiftSelection {
-  date: string;
-  shift: '7h-19h' | '19h-7h';
-}
+import { disponibilitesApi } from '@/lib/api';
+import type { Disponibilite, DisponibiliteStatut, ShiftTranche } from '@/types';
 
 const CalendarPage = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [selections, setSelections] = useState<ShiftSelection[]>([]);
+  const [entries, setEntries] = useState<Disponibilite[]>([]);
+  const [statut, setStatut] = useState<DisponibiliteStatut>('disponible');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const handleShiftSelect = (shift: '7h-19h' | '19h-7h') => {
-    if (!selectedDate) return;
-    const dateStr = format(selectedDate, 'yyyy-MM-dd');
-    setSelections(prev => {
-      const existing = prev.findIndex(s => s.date === dateStr);
-      if (existing >= 0) {
-        const updated = [...prev];
-        updated[existing] = { date: dateStr, shift };
-        return updated;
-      }
-      return [...prev, { date: dateStr, shift }];
-    });
+  const load = async () => {
+    setError('');
+    try {
+      const data = await disponibilitesApi.list();
+      setEntries(data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Chargement impossible');
+    }
   };
 
-  const currentSelection = selectedDate ? selections.find(s => s.date === format(selectedDate, 'yyyy-MM-dd')) : undefined;
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const dateKey = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null;
+
+  const selectionsByDate = useMemo(() => {
+    const map = new Map<string, Disponibilite[]>();
+
+    for (const entry of entries) {
+      const existing = map.get(entry.dateJour) ?? [];
+      existing.push(entry);
+      map.set(entry.dateJour, existing);
+    }
+
+    return map;
+  }, [entries]);
+
+  const currentSelections = dateKey ? selectionsByDate.get(dateKey) ?? [] : [];
+
+  const saveShift = async (tranche: ShiftTranche) => {
+    if (!dateKey) return;
+
+    setError('');
+    setSuccess('');
+
+    try {
+      const existing = currentSelections.find((x) => x.tranche === tranche);
+
+      if (existing) {
+        await disponibilitesApi.update(existing.id, { statut });
+      } else {
+        await disponibilitesApi.create({
+          dateJour: dateKey,
+          tranche,
+          statut,
+        });
+      }
+
+      setSuccess('Disponibilite enregistree');
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Enregistrement impossible');
+    }
+  };
 
   return (
     <div className="px-4 py-5">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="font-display text-2xl font-bold text-foreground">Calendrier</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Choisissez vos gardes</p>
+        <p className="text-muted-foreground text-sm mt-0.5">Choisissez vos disponibilites</p>
       </motion.div>
+
+      {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
+      {success && <p className="mt-3 text-sm text-green-600">{success}</p>}
 
       <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="mt-5">
         <Card className="glass-card">
@@ -51,7 +94,7 @@ const CalendarPage = () => {
               locale={fr}
               className="rounded-md w-full"
               modifiers={{
-                booked: selections.map(s => new Date(s.date)),
+                booked: Array.from(selectionsByDate.keys()).map((day) => new Date(day)),
               }}
               modifiersClassNames={{
                 booked: 'bg-primary/20 text-primary font-bold',
@@ -62,47 +105,44 @@ const CalendarPage = () => {
       </motion.div>
 
       {selectedDate && (
-        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="mt-4">
-          <p className="text-sm font-medium text-foreground mb-3">
+        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="mt-4 space-y-3">
+          <p className="text-sm font-medium text-foreground">
             {format(selectedDate, 'EEEE d MMMM', { locale: fr })}
           </p>
+
+          <Select value={statut} onValueChange={(v: DisponibiliteStatut) => setStatut(v)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="disponible">Disponible</SelectItem>
+              <SelectItem value="sollicite">Sollicite</SelectItem>
+              <SelectItem value="valide">Valide</SelectItem>
+              <SelectItem value="refuse">Refuse</SelectItem>
+            </SelectContent>
+          </Select>
+
           <div className="grid grid-cols-2 gap-3">
-            <Button
-              variant={currentSelection?.shift === '7h-19h' ? 'default' : 'outline'}
-              className={`h-20 flex flex-col items-center justify-center gap-1 ${
-                currentSelection?.shift === '7h-19h' ? 'gradient-primary text-primary-foreground' : ''
-              }`}
-              onClick={() => handleShiftSelect('7h-19h')}
-            >
+            <Button className="h-20 flex flex-col gap-1 gradient-primary text-primary-foreground" onClick={() => void saveShift('07h-19h')}>
               <Sun className="w-6 h-6" />
               <span className="text-xs font-semibold">Jour</span>
-              <span className="text-[10px] opacity-70">7h - 19h</span>
+              <span className="text-[10px] opacity-70">07h - 19h</span>
             </Button>
-            <Button
-              variant={currentSelection?.shift === '19h-7h' ? 'default' : 'outline'}
-              className={`h-20 flex flex-col items-center justify-center gap-1 ${
-                currentSelection?.shift === '19h-7h' ? 'gradient-accent text-accent-foreground' : ''
-              }`}
-              onClick={() => handleShiftSelect('19h-7h')}
-            >
+            <Button className="h-20 flex flex-col gap-1 gradient-accent text-accent-foreground" onClick={() => void saveShift('19h-07h')}>
               <Moon className="w-6 h-6" />
               <span className="text-xs font-semibold">Nuit</span>
-              <span className="text-[10px] opacity-70">19h - 7h</span>
+              <span className="text-[10px] opacity-70">19h - 07h</span>
             </Button>
           </div>
         </motion.div>
       )}
 
-      {selections.length > 0 && (
+      {currentSelections.length > 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-5">
-          <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Vos sélections</p>
+          <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Creneaux du jour</p>
           <div className="space-y-2">
-            {selections.map(s => (
-              <div key={s.date} className="flex items-center justify-between p-3 rounded-xl bg-muted/50">
-                <span className="text-sm font-medium">{format(new Date(s.date), 'd MMM', { locale: fr })}</span>
-                <Badge className={s.shift === '7h-19h' ? 'gradient-primary text-primary-foreground' : 'gradient-accent text-accent-foreground'}>
-                  {s.shift === '7h-19h' ? '☀️ Jour' : '🌙 Nuit'}
-                </Badge>
+            {currentSelections.map((selection) => (
+              <div key={selection.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/50">
+                <span className="text-sm font-medium">{selection.tranche}</span>
+                <Badge>{selection.statut}</Badge>
               </div>
             ))}
           </div>

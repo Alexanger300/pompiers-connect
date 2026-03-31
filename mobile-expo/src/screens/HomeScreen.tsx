@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import {
@@ -256,3 +256,4 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 });
+

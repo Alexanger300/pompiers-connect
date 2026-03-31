@@ -18,6 +18,11 @@ const CANDIDATE_PREFIXES = Array.from(
 );
 let preferredPrefix = CANDIDATE_PREFIXES[0] ?? '';
 
+export const API_RUNTIME = {
+  baseUrl: API_BASE_URL,
+  candidatePrefixes: CANDIDATE_PREFIXES,
+};
+
 function makeUrl(prefix: string, path: string) {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   return `${API_BASE_URL}${prefix}${normalizedPath}`;
@@ -29,7 +34,17 @@ async function fetchWithPrefix(path: string, init?: RequestInit) {
   let lastResponse: Response | null = null;
 
   for (const prefix of ordered) {
-    const response = await fetch(makeUrl(prefix, path), init);
+    let response: Response;
+    try {
+      response = await fetch(makeUrl(prefix, path), init);
+    } catch (error) {
+      throw new Error(
+        `Network request failed for ${makeUrl(prefix, path)}. ` +
+        `Vérifie que l'API est joignable depuis le téléphone (HTTPS ou IP locale correcte). ` +
+        `${error instanceof Error ? error.message : ''}`.trim(),
+      );
+    }
+
     if (response.status !== 404) {
       preferredPrefix = prefix;
       return response;

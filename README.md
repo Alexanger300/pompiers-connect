@@ -344,3 +344,45 @@ Pour plus d'détails, consulter la documentation du backend.
 ---
 
 **Développé avec ❤️ par l'équipe Pompiers Connect**
+
+## Expo Go (Nouveau)
+
+Un client mobile Expo a été ajouté dans le dossier `mobile-expo/`.
+
+### Objectif
+- Rendre le projet compatible Expo Go sans casser le frontend web Vite.
+- Connecter Expo au backend existant (`/auth`, `/auth/refresh`, `/devices`, `/notifications`).
+
+### Lancer l'app Expo
+
+```bash
+cd mobile-expo
+npm install
+npm run start
+```
+
+Ensuite scanner le QR code avec Expo Go.
+
+### Configuration API
+
+Le client mobile lit l'URL backend dans:
+- `mobile-expo/app.json` -> `expo.extra.apiUrl`
+
+Valeur actuelle:
+- `http://localhost:4000`
+
+Sur téléphone réel, remplacer `localhost` par l'IP locale de la machine backend (ex: `http://192.168.1.20:4000`).
+
+### Écrans mobiles inclus
+- Login (JWT + refresh auto)
+- Home avec:
+- profil connecté
+- enregistrement du `ExpoPushToken` dans `POST /devices`
+- liste des devices de l'utilisateur
+- liste des notifications pour `admin` / `superviseur`
+
+### Note importante push
+
+Conformément à la doc backend:
+- Expo Go peut fonctionner pour tests rapides
+- mais pour des tests push Android fiables, privilégier un development build

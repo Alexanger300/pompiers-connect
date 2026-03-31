@@ -4,7 +4,7 @@ const dotenv = require('dotenv');
 
 function loadEnvIfExists(filePath) {
   if (fs.existsSync(filePath)) {
-    dotenv.config({ path: filePath, override: false });
+    dotenv.config({ path: filePath, override: false, quiet: true });
   }
 }
 
@@ -16,7 +16,7 @@ module.exports = ({ config }) => {
     process.env.EXPO_PUBLIC_API_URL ||
     process.env.VITE_API_URL ||
     config?.extra?.apiUrl ||
-    'http://localhost:4000';
+    'https://pompiers-connect.vercel.app';
 
   const apiPrefix =
     process.env.EXPO_PUBLIC_API_PREFIX ||
