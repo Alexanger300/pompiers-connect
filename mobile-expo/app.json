@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "Pompiers Connect",
+    "slug": "pompiers-connect",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/logo-pompiers-square.png",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false
+    },
+    "android": {
+      "package": "com.pompiersconnect.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/logo-pompiers-square.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "splash": {
+      "image": "./assets/logo-pompiers-square.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "extra": {
+      "apiUrl": "http://localhost:4000",
+      "eas": {
+        "projectId": "96a8929d-40b0-40c0-803c-33783cd94fb9"
+      }
+    },
+    "plugins": [
+      "expo-notifications"
+    ]
+  }
+}
