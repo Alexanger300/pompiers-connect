@@ -1,44 +1,86 @@
+import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
-
-const TRAINEES = [
-  { id: '1', name: 'Lucas Martin', skills: [85, 60, 75, 40, 100, 55, 70, 90] },
-  { id: '4', name: 'Sophie Bernard', skills: [90, 70, 60, 30, 80, 45, 65, 85] },
-  { id: '5', name: 'Thomas Petit', skills: [50, 40, 55, 20, 70, 30, 45, 60] },
-  { id: '6', name: 'Emma Leroy', skills: [95, 85, 90, 75, 100, 80, 88, 92] },
-];
+import { suiviApi } from '@/lib/api';
+import type { FormationItem, Suivi } from '@/types';
 
 const AdminTraining = () => {
+  const [items, setItems] = useState<FormationItem[]>([]);
+  const [suivis, setSuivis] = useState<Suivi[]>([]);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [formationItems, mySuivis] = await Promise.all([
+          suiviApi.getFormationItems(),
+          suiviApi.getMine(),
+        ]);
+
+        setItems(formationItems);
+        setSuivis(mySuivis);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Erreur de chargement');
+      }
+    };
+
+    void load();
+  }, []);
+
   return (
     <div className="px-4 py-5">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="font-display text-2xl font-bold text-foreground">Suivi formation</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Progression des stagiaires</p>
+        <p className="text-muted-foreground text-sm mt-0.5">Suivis disponibles</p>
       </motion.div>
 
+      {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
+
       <div className="space-y-3 mt-5">
-        {TRAINEES.map((trainee, i) => {
-          const avg = Math.round(trainee.skills.reduce((a, b) => a + b, 0) / trainee.skills.length);
-          const statusColor = avg >= 80 ? 'bg-success/20 text-success' : avg >= 50 ? 'bg-warning/20 text-warning' : 'bg-urgent/20 text-urgent';
-          const statusLabel = avg >= 80 ? 'Excellent' : avg >= 50 ? 'En cours' : 'À renforcer';
+        {suivis.map((suivi, i) => {
+          const item = items.find((x) => x.id === suivi.itemId);
+          const avg = suivi.progressionPourcentage;
+
+          const statusColor =
+            avg >= 80
+              ? 'bg-green-100 text-green-700'
+              : avg >= 50
+              ? 'bg-orange-100 text-orange-700'
+              : 'bg-red-100 text-red-700';
+
+          const statusLabel =
+            avg >= 80 ? 'Excellent' : avg >= 50 ? 'En cours' : 'À renforcer';
 
           return (
-            <motion.div key={trainee.id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
+            <motion.div
+              key={suivi.id}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.08 }}
+            >
               <Card className="glass-card">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
-                        {trainee.name.split(' ').map(n => n[0]).join('')}
-                      </div>
-                      <p className="font-semibold text-sm text-foreground">{trainee.name}</p>
+                    <div>
+                      <p className="font-semibold text-sm text-foreground">
+                        {item?.titre ?? `Formation #${suivi.itemId}`}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {suivi.commentaires || 'Aucun commentaire'}
+                      </p>
                     </div>
+
                     <div className="flex items-center gap-2">
-                      <Badge className={`${statusColor} text-[10px]`}>{statusLabel}</Badge>
-                      <span className="text-xl font-display font-bold text-gradient">{avg}%</span>
+                      <Badge className={`${statusColor} text-[10px]`}>
+                        {statusLabel}
+                      </Badge>
+                      <span className="text-xl font-display font-bold text-gradient">
+                        {avg}%
+                      </span>
                     </div>
                   </div>
+
                   <div className="h-2.5 rounded-full bg-muted overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}

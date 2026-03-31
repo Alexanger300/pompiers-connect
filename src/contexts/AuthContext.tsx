@@ -1,49 +1,101 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { User, UserRole } from '@/types';
+import { authApi, tokenStorage } from '@/lib/api';
+
+interface RegisterPayload {
+  email: string;
+  password: string;
+  nom: string;
+  prenom: string;
+  telephone?: string;
+  deviceName?: string;
+  role?: UserRole;
+}
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
   isAuthenticated: boolean;
+  isLoading: boolean;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  refreshMe: () => Promise<void>;
+  register: (payload: RegisterPayload) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// Mock users for demo
-const MOCK_USERS: (User & { password: string })[] = [
-  { id: '1', email: 'stagiaire@pompiers.fr', password: 'demo1234', name: 'Lucas Martin', role: 'stagiaire' },
-  { id: '2', email: 'superviseur@pompiers.fr', password: 'demo1234', name: 'Marie Dupont', role: 'superviseur' },
-  { id: '3', email: 'admin@pompiers.fr', password: 'demo1234', name: 'Jean Lambert', role: 'administrateur' },
-];
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('pompiers_user');
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [user, setUser] = useState<User | null>(() => tokenStorage.getUser());
+  const [isLoading, setIsLoading] = useState(true);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const found = MOCK_USERS.find(u => u.email === email && u.password === password);
-    if (found) {
-      const { password: _, ...userData } = found;
-      setUser(userData);
-      localStorage.setItem('pompiers_user', JSON.stringify(userData));
+  useEffect(() => {
+    const bootstrap = async () => {
+      const access = tokenStorage.getAccessToken();
+      const refresh = tokenStorage.getRefreshToken();
+
+      if (!access && !refresh) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const me = await authApi.me();
+        setUser(me);
+      } catch {
+        tokenStorage.clear();
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void bootstrap();
+  }, []);
+
+  const login = async (email: string, password: string) => {
+    try {
+      const loggedUser = await authApi.login(email, password);
+      setUser(loggedUser);
       return true;
+    } catch {
+      return false;
     }
-    return false;
-  }, []);
+  };
 
-  const logout = useCallback(() => {
+  const logout = async () => {
+    await authApi.logout();
     setUser(null);
-    localStorage.removeItem('pompiers_user');
-  }, []);
+  };
 
-  return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user }}>
-      {children}
-    </AuthContext.Provider>
+  const refreshMe = async () => {
+    const me = await authApi.me();
+    setUser(me);
+  };
+
+  const register = async (payload: RegisterPayload) => {
+    try {
+      const createdUser = await authApi.register(payload);
+      setUser(createdUser);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const value = useMemo(
+    () => ({
+      user,
+      isAuthenticated: !!user,
+      isLoading,
+      login,
+      logout,
+      refreshMe,
+      register,
+    }),
+    [user, isLoading],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {

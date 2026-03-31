@@ -1,34 +1,44 @@
-export type UserRole = 'stagiaire' | 'superviseur' | 'administrateur';
+export type UserRole = 'agent' | 'superviseur' | 'admin';
 
 export interface User {
-  id: string;
+  id: number;
+  nom: string;
+  prenom: string;
   email: string;
-  name: string;
+  telephone?: string | null;
   role: UserRole;
-  avatar?: string;
+  createdAt?: string;
 }
 
-export interface ScheduleEntry {
-  id: string;
-  userId: string;
-  userName: string;
-  date: string;
-  shift: '7h-19h' | '19h-7h';
-  confirmed: boolean;
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
 }
 
-export interface Notification {
-  id: string;
-  title: string;
+export interface LoginResponse {
+  user: User;
+  accessToken: string;
+  refreshToken: string;
+}
+
+export interface FormationItem {
+  id: number;
+  titre: string;
+  description: string;
+  templateJson: Record<string, boolean>;
+}
+
+export interface Suivi {
+  id: number;
+  userId: number;
+  itemId: number;
+  estValide: boolean;
+  progressionPourcentage: number;
+  dateValidation: string | null;
+  commentaires: string | null;
+  donneesProgressionJson: Record<string, boolean>;
+}
+
+export interface ApiError {
   message: string;
-  type: 'info' | 'prioritaire' | 'urgence';
-  createdAt: string;
-  read: boolean;
-}
-
-export interface SkillProgress {
-  id: string;
-  name: string;
-  category: string;
-  progress: number;
 }
