@@ -100,11 +100,3 @@ CREATE TABLE suivi_formation (
 );
 
 CREATE INDEX idx_suivi_user ON suivi_formation(user_id);
-
--- --- 6. EXEMPLE D'INSERTION ---
-INSERT INTO formation_items (titre, description, template_json)
-VALUES (
-	'Formation Secours a Personne',
-	'Validation des gestes techniques',
-	'{"HEMORRAGIE": false, "ACR": false, "BILAN": false}'
-);

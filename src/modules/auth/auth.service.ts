@@ -23,6 +23,7 @@ type PublicUser = {
     prenom: string;
     email: string;
     telephone: string | null;
+    role: string;
 };
 
 type AuthResult = {
@@ -75,6 +76,7 @@ function toPublicUser(user: {
     prenom: string;
     email: string;
     telephone: string | null;
+    role: string;
 }): PublicUser {
     return {
         id: user.id,
@@ -82,6 +84,7 @@ function toPublicUser(user: {
         prenom: user.prenom,
         email: user.email,
         telephone: user.telephone,
+        role: user.role,
     };
 }
 

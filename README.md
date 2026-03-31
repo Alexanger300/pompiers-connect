@@ -182,7 +182,8 @@ Reponse 201:
 		"nom": "Dupont",
 		"prenom": "Jean",
 		"email": "user@example.com",
-		"telephone": "0612345678"
+		"telephone": "0612345678",
+		"role": "agent"
 	},
 	"accessToken": "<jwt_access_token>",
 	"refreshToken": "<jwt_refresh_token>"
@@ -221,7 +222,8 @@ Reponse 200:
 		"nom": "Dupont",
 		"prenom": "Jean",
 		"email": "user@example.com",
-		"telephone": "0612345678"
+		"telephone": "0612345678",
+		"role": "agent"
 	},
 	"accessToken": "<jwt_access_token>",
 	"refreshToken": "<jwt_refresh_token>"
@@ -320,7 +322,8 @@ Reponse 200:
 	"nom": "Dupont",
 	"prenom": "Jean",
 	"email": "user@example.com",
-	"telephone": "0612345678"
+	"telephone": "0612345678",
+	"role": "agent"
 }
 ```
 
