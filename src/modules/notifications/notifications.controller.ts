@@ -6,6 +6,7 @@ import {
     removeNotification,
     sendNotificationToRecipients,
 } from "./notifications.service";
+import { config } from "../../config/env";
 
 function parseAuthenticatedUserId(req: Request): number {
     const userId = Number(req.userId);
@@ -34,6 +35,7 @@ export async function postTargetedNotificationRequest(
             message: "Targeted notification requested",
             id: result.id,
             recipients: result.recipients,
+            ...(config.nodeEnv === "development" ? { debug: result.debug } : {}),
         });
     } catch (error) {
         next(error);
@@ -58,6 +60,7 @@ export async function postBroadcastNotificationRequest(
             message: "Broadcast notification requested",
             id: result.id,
             recipients: result.recipients,
+            ...(config.nodeEnv === "development" ? { debug: result.debug } : {}),
         });
     } catch (error) {
         next(error);

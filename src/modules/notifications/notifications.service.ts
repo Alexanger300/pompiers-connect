@@ -14,6 +14,17 @@ type NotificationPayload = {
     data?: Record<string, unknown>;
 };
 
+type NotificationDispatchDebug = {
+    requestedUserIds: number[];
+    activeDevices: number;
+    androidDevices: number;
+    iosDevices: number;
+    androidEnabled: boolean;
+    iosEnabled: boolean;
+    sent: number;
+    failedTokens: string[];
+};
+
 function createHttpError(status: number, message: string): never {
     throw { status, message };
 }
@@ -104,6 +115,7 @@ async function dispatchPushNotification(payload: {
     recipientUserIds: number[];
 }): Promise<{
     recipientCount: number;
+    debug: NotificationDispatchDebug;
 }> {
     const devices = await listDevicesByUserIds(payload.recipientUserIds);
     const androidDevices = devices.filter((device) => device.platform === "android");
@@ -148,6 +160,16 @@ async function dispatchPushNotification(payload: {
 
     return {
         recipientCount: result.sent,
+        debug: {
+            requestedUserIds: payload.recipientUserIds,
+            activeDevices: devices.length,
+            androidDevices: androidDevices.length,
+            iosDevices: iosDevices.length,
+            androidEnabled: isAndroidPushEnabled(),
+            iosEnabled: isIosPushEnabled(),
+            sent: result.sent,
+            failedTokens: result.failedTokens,
+        },
     };
 }
 
@@ -190,21 +212,27 @@ export async function sendNotificationToRecipients(payload: {
         data,
     });
 
+    let dispatchResult: Awaited<ReturnType<typeof dispatchPushNotification>> | null = null;
+
     try {
-        const result = await dispatchPushNotification({
+        dispatchResult = await dispatchPushNotification({
             recipientUserIds,
             title,
             message,
             data,
         });
-        await updateNotificationStatus(notification.id, "sent", result.recipientCount);
-        notification.recipientCount = result.recipientCount;
+        await updateNotificationStatus(notification.id, "sent", dispatchResult.recipientCount);
+        notification.recipientCount = dispatchResult.recipientCount;
     } catch (error) {
         await updateNotificationStatus(notification.id, "failed");
         throw error;
     }
 
-    return { id: notification.id, recipients: notification.recipientCount };
+    return {
+        id: notification.id,
+        recipients: notification.recipientCount,
+        debug: dispatchResult?.debug ?? null,
+    };
 }
 
 export async function broadcastNotificationToOthers(payload: {
@@ -236,21 +264,27 @@ export async function broadcastNotificationToOthers(payload: {
         data,
     });
 
+    let dispatchResult: Awaited<ReturnType<typeof dispatchPushNotification>> | null = null;
+
     try {
-        const result = await dispatchPushNotification({
+        dispatchResult = await dispatchPushNotification({
             recipientUserIds,
             title,
             message,
             data,
         });
-        await updateNotificationStatus(notification.id, "sent", result.recipientCount);
-        notification.recipientCount = result.recipientCount;
+        await updateNotificationStatus(notification.id, "sent", dispatchResult.recipientCount);
+        notification.recipientCount = dispatchResult.recipientCount;
     } catch (error) {
         await updateNotificationStatus(notification.id, "failed");
         throw error;
     }
 
-    return { id: notification.id, recipients: notification.recipientCount };
+    return {
+        id: notification.id,
+        recipients: notification.recipientCount,
+        debug: dispatchResult?.debug ?? null,
+    };
 }
 
 export async function getNotifications(payload: {
