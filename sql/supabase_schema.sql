@@ -6,7 +6,7 @@
 -- --- 1. TYPES ENUMERES ---
 CREATE TYPE user_role AS ENUM ('agent', 'superviseur', 'admin');
 CREATE TYPE tranche_type AS ENUM ('07h-19h', '19h-07h');
-CREATE TYPE statut_type AS ENUM ('disponible', 'sollicite', 'valide');
+CREATE TYPE statut_type AS ENUM ('disponible', 'sollicite', 'valide', 'refuse');
 
 -- --- 2. TABLE DES UTILISATEURS ---
 CREATE TABLE users (
@@ -35,6 +35,22 @@ CREATE TABLE sessions (
 
 CREATE INDEX idx_sessions_user_id ON sessions(user_id);
 CREATE INDEX idx_sessions_expires_at ON sessions(expires_at);
+
+CREATE TABLE notifications (
+	id SERIAL PRIMARY KEY,
+	type TEXT NOT NULL,
+	sender_user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	title TEXT NOT NULL,
+	message TEXT NOT NULL,
+	data JSONB DEFAULT '{}',
+	recipient_user_ids INT[] DEFAULT '{}',
+	recipient_count INT NOT NULL DEFAULT 0,
+	status TEXT NOT NULL DEFAULT 'pending',
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_notifications_sender ON notifications(sender_user_id);
+CREATE INDEX idx_notifications_created_at ON notifications(created_at);
 
 -- --- 4. VOLET 1 : COLLECTE DES DISPONIBILITES ---
 CREATE TABLE disponibilites (

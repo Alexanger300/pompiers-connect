@@ -32,6 +32,10 @@ export const config = {
     smtpUser: getEnv("SMTP_USER"),
     smtpPass: getEnv("SMTP_PASS"),
     smtpFrom: getEnv("SMTP_FROM"),
+
+    // Notifications
+    mobileNotificationCallbackUrl: getEnv("MOBILE_NOTIFICATION_CALLBACK_URL"),
+    mobileNotificationCallbackSecret: getEnv("MOBILE_NOTIFICATION_CALLBACK_SECRET", ""),
 };
 
 // Validation

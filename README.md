@@ -8,7 +8,33 @@ Ce README decrit tous les endpoints exposes par l'API, avec leurs regles d'acces
 - Production: URL Vercel du projet
 
 Note: selon l'environnement de deploiement/proxy, les endpoints peuvent etre exposes en
-`/auth/...` ou `/api/auth/...` (idem pour `/users` et `/suivi`).
+`/auth/...` ou `/api/auth/...` (idem pour `/users`, `/suivi`, `/disponibilites` et `/notifications`).
+
+## Comptes staff par seed
+
+Commande:
+
+```bash
+npm run seed:staff
+```
+
+Comportement:
+
+- cree un compte `admin` si l'email configure n'existe pas
+- cree un compte `superviseur` si l'email configure n'existe pas
+- affiche les credentials generes uniquement pour les comptes nouvellement crees
+- n'affiche pas de mot de passe pour un compte deja existant
+
+Variables optionnelles:
+
+- `SEED_ADMIN_EMAIL`
+- `SEED_ADMIN_NOM`
+- `SEED_ADMIN_PRENOM`
+- `SEED_ADMIN_TELEPHONE`
+- `SEED_SUPERVISEUR_EMAIL`
+- `SEED_SUPERVISEUR_NOM`
+- `SEED_SUPERVISEUR_PRENOM`
+- `SEED_SUPERVISEUR_TELEPHONE`
 
 ## Authentification
 
@@ -208,7 +234,27 @@ Erreurs frequentes:
 
 ### 3) Utilisateurs
 
-Toutes les routes `/users/:id` sont protegees et limitees au proprietaire du compte (self access).
+#### GET /users
+
+- Description: lister tous les utilisateurs
+- Auth: oui
+- Roles: `admin`, `superviseur`
+
+Reponse 200:
+
+```json
+[
+	{
+		"id": 12,
+		"nom": "Dupont",
+		"prenom": "Jean",
+		"email": "user@example.com",
+		"role": "agent",
+		"telephone": "0612345678",
+		"createdAt": "2026-03-30T10:00:00.000Z"
+	}
+]
+```
 
 #### GET /users/:id
 
@@ -216,31 +262,13 @@ Toutes les routes `/users/:id` sont protegees et limitees au proprietaire du com
 - Auth: oui
 - Roles: tous (self uniquement)
 
-Reponse 200:
-
-```json
-{
-	"id": 12,
-	"nom": "Dupont",
-	"prenom": "Jean",
-	"email": "user@example.com",
-	"telephone": "0612345678",
-	"createdAt": "2026-03-30T10:00:00.000Z"
-}
-```
-
-Erreurs frequentes:
-
-- `403` acces a un autre utilisateur
-- `404` utilisateur introuvable
-
 #### PATCH /users/:id
 
-- Description: modifier un profil utilisateur
+- Description: modifier son profil utilisateur
 - Auth: oui
 - Roles: tous (self uniquement)
 
-Body JSON (au moins un champ):
+Body JSON:
 
 ```json
 {
@@ -251,43 +279,37 @@ Body JSON (au moins un champ):
 }
 ```
 
-Reponse 200:
+#### PATCH /users/:id/role
+
+- Description: promouvoir ou changer le role d'un utilisateur
+- Auth: oui
+- Roles: `admin`
+
+Body JSON:
 
 ```json
 {
-	"id": 12,
-	"nom": "NouveauNom",
-	"prenom": "NouveauPrenom",
-	"email": "new@example.com",
-	"telephone": "0600000000",
-	"createdAt": "2026-03-30T10:00:00.000Z"
+	"role": "superviseur"
 }
 ```
 
-Erreurs frequentes:
+Valeurs possibles:
 
-- `400` aucun champ a modifier
-- `403` acces a un autre utilisateur
-- `409` email deja utilise
+- `agent`
+- `superviseur`
+- `admin`
 
 #### DELETE /users/:id
 
 - Description: supprimer un utilisateur
 - Auth: oui
-- Roles: tous (self uniquement)
-
-Reponse 204: pas de body
-
-Erreurs frequentes:
-
-- `403` acces a un autre utilisateur
-- `404` utilisateur introuvable
+- Roles: self, `admin`, `superviseur`
 
 #### POST /users/:id/email
 
 - Description: envoyer un email a un utilisateur specifique
 - Auth: oui
-- Roles: `admin`, `superviseur`, ou proprietaire du compte (self)
+- Roles: `admin`, `superviseur`, ou proprietaire du compte
 
 Body JSON:
 
@@ -298,21 +320,168 @@ Body JSON:
 }
 ```
 
-Reponse 202:
+#### POST /auth/register
+
+- Description: creer un utilisateur depuis le front ou un back-office
+- Auth: oui
+- Roles: `admin`, `superviseur`
+- Regle: `admin` peut creer n'importe quel role, `superviseur` cree uniquement des `agent`
+
+Body JSON:
 
 ```json
 {
-	"message": "Email sent"
+	"email": "user@example.com",
+	"password": "password123",
+	"nom": "Dupont",
+	"prenom": "Jean",
+	"telephone": "0612345678",
+	"deviceName": "BackOffice",
+	"role": "agent"
 }
 ```
 
-Erreurs frequentes:
+### 4) Notifications
 
-- `400` subject/message manquants
-- `403` acces interdit
-- `404` utilisateur introuvable
+Les notifications sont separees des emails. Elles sont persistees en base dans la table `notifications`, puis le backend appelle le callback mobile configure par `MOBILE_NOTIFICATION_CALLBACK_URL`.
 
-### 4) Suivi de formation
+#### GET /notifications
+
+- Description: lister les notifications envoyees
+- Auth: oui
+- Roles: `admin`, `superviseur`
+- Regle: `admin` voit tout; `superviseur` voit les notifications qu'il a emises
+
+Query params optionnels:
+
+- `type=direct`
+- `status=sent`
+
+Reponse 200:
+
+```json
+[
+	{
+		"id": 3,
+		"type": "broadcast",
+		"senderUserId": 1,
+		"title": "Alerte generale",
+		"message": "Merci de consulter l'application",
+		"data": {
+			"screen": "home"
+		},
+		"recipientUserIds": [2, 3, 4],
+		"recipientCount": 3,
+		"status": "sent",
+		"createdAt": "2026-03-31T08:00:00.000Z"
+	}
+]
+```
+
+#### POST /notifications/callback
+
+- Description: demander l'envoi d'une notification a une liste de destinataires
+- Auth: oui
+- Roles: `admin`, `superviseur`
+
+Body JSON:
+
+```json
+{
+	"recipientUserIds": [12, 14],
+	"title": "Alerte",
+	"message": "Nouvelle information disponible",
+	"data": {
+		"screen": "planning"
+	}
+}
+```
+
+#### POST /notifications/broadcast
+
+- Description: demander l'envoi d'une notification a tous les autres utilisateurs
+- Auth: oui
+- Roles: `admin`, `superviseur`
+
+Body JSON:
+
+```json
+{
+	"title": "Alerte generale",
+	"message": "Merci de consulter l'application",
+	"data": {
+		"screen": "home"
+	}
+}
+```
+
+#### DELETE /notifications/:id
+
+- Description: supprimer une notification enregistree
+- Auth: oui
+- Roles: `admin`, `superviseur`
+
+### 5) Horaires / planning
+
+#### GET /disponibilites
+
+- Description: voir les horaires / disponibilites
+- Auth: oui
+- Roles: tous
+- Regle: un utilisateur voit ses disponibilites; `admin`/`superviseur` peuvent filtrer avec `userId`
+
+Query params optionnels:
+
+- `userId=12`
+- `dateJour=2026-03-31`
+
+#### POST /disponibilites
+
+- Description: creer un horaire / une disponibilite
+- Auth: oui
+- Roles: tous
+
+Body JSON:
+
+```json
+{
+	"dateJour": "2026-03-31",
+	"tranche": "07h-19h",
+	"statut": "disponible"
+}
+```
+
+Valeurs possibles pour `tranche`:
+
+- `07h-19h`
+- `19h-07h`
+
+Valeurs possibles pour `statut`:
+
+- `disponible`
+- `sollicite`
+- `valide`
+- `refuse`
+
+#### PATCH /disponibilites/:id
+
+- Description: modifier une disponibilite
+- Auth: oui
+- Roles: proprietaire du creneau, `admin`, `superviseur`
+
+#### PATCH /disponibilites/:id/validate
+
+- Description: valider un horaire
+- Auth: oui
+- Roles: `admin`, `superviseur`
+
+#### PATCH /disponibilites/:id/reject
+
+- Description: refuser un horaire
+- Auth: oui
+- Roles: `admin`, `superviseur`
+
+### 6) Suivi de formation
 
 #### GET /suivi/formation-items
 
@@ -466,6 +635,54 @@ Erreurs frequentes:
 - `403` role insuffisant
 - `404` suivi introuvable
 
+#### GET /suivi/admin
+
+- Description: voir tous les suivis de tous les agents
+- Auth: oui
+- Roles: `admin`, `superviseur`
+
+Query params optionnels:
+
+- `userId=12`
+- `estValide=true`
+- `estValide=false`
+
+Reponse 200:
+
+```json
+[
+	{
+		"id": 10,
+		"userId": 12,
+		"itemId": 1,
+		"estValide": false,
+		"progressionPourcentage": 45,
+		"dateValidation": null,
+		"commentaires": "En cours",
+		"donneesProgressionJson": {
+			"HEMORRAGIE": true,
+			"ACR": false,
+			"BILAN": false
+		},
+		"userEmail": "user@example.com",
+		"userNom": "Dupont",
+		"userPrenom": "Jean",
+		"formationTitre": "Formation Secours a Personne"
+	}
+]
+```
+
+#### GET /suivi/pending
+
+- Description: lister globalement les suivis a valider
+- Auth: oui
+- Roles: `admin`, `superviseur`
+- Regle: equivalent a `GET /suivi/admin?estValide=false`
+
+Query params optionnels:
+
+- `userId=12`
+
 ## Deploiement Vercel (GitHub)
 
 Le projet est configure pour un deploiement automatique via GitHub Actions vers Vercel.
@@ -491,6 +708,15 @@ Dans GitHub > Settings > Secrets and variables > Actions:
 - `JWT_ACCESS_SECRET`
 - `JWT_REFRESH_SECRET`
 - `SESSION_EXPIRY_DAYS`
+- `MOBILE_NOTIFICATION_CALLBACK_URL`
+- `MOBILE_NOTIFICATION_CALLBACK_SECRET`
+
+## Migration base de donnees
+
+Pour supporter toutes les routes documentees ci-dessus, la base Supabase doit inclure les changements de `sql/supabase_schema.sql`:
+
+- ajout de la table `notifications`
+- ajout du statut `refuse` dans `statut_type`
 
 ### Branche de deploiement
 

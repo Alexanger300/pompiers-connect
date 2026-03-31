@@ -5,6 +5,7 @@ type UserView = {
     nom: string;
     prenom: string;
     email: string;
+    role: string;
     telephone: string | null;
     createdAt: string;
 };
@@ -15,6 +16,7 @@ function mapUserViewRow(row: any): UserView {
         nom: row.nom,
         prenom: row.prenom,
         email: row.email,
+        role: row.role,
         telephone: row.telephone,
         createdAt: row.created_at,
     };
@@ -29,7 +31,7 @@ function throwOnError(error: { message: string } | null): void {
 export async function findUserById(id: number): Promise<UserView | null> {
     const { data, error } = await supabase
         .from("users")
-        .select("id, nom, prenom, email, telephone, created_at")
+        .select("id, nom, prenom, email, role, telephone, created_at")
         .eq("id", id)
         .maybeSingle();
 
@@ -37,21 +39,32 @@ export async function findUserById(id: number): Promise<UserView | null> {
     return data ? mapUserViewRow(data) : null;
 }
 
+export async function listUsers(): Promise<UserView[]> {
+    const { data, error } = await supabase
+        .from("users")
+        .select("id, nom, prenom, email, role, telephone, created_at")
+        .order("created_at", { ascending: false });
+
+    throwOnError(error);
+    return (data ?? []).map(mapUserViewRow);
+}
+
 export async function updateUserById(
     id: number,
-    data: { nom?: string; prenom?: string; email?: string; telephone?: string },
+    data: { nom?: string; prenom?: string; email?: string; telephone?: string; role?: string },
 ): Promise<UserView> {
     const payload: Record<string, unknown> = {};
     if (data.nom !== undefined) payload.nom = data.nom;
     if (data.prenom !== undefined) payload.prenom = data.prenom;
     if (data.email !== undefined) payload.email = data.email;
     if (data.telephone !== undefined) payload.telephone = data.telephone;
+    if (data.role !== undefined) payload.role = data.role;
 
     const { data: updated, error } = await supabase
         .from("users")
         .update(payload)
         .eq("id", id)
-        .select("id, nom, prenom, email, telephone, created_at")
+        .select("id, nom, prenom, email, role, telephone, created_at")
         .single();
 
     if (error) {

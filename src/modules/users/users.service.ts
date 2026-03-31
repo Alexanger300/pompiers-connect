@@ -1,4 +1,4 @@
-import { deleteUserById, findUserById, updateUserById } from "./users.repository";
+import { deleteUserById, findUserById, listUsers, updateUserById } from "./users.repository";
 import { sendMailTo } from "../../utils/mailer";
 
 function createHttpError(status: number, message: string): never {
@@ -15,6 +15,10 @@ export async function getUser(id: number) {
     return user;
 }
 
+export async function getAllUsers() {
+    return listUsers();
+}
+
 export async function updateUser(
     id: number,
     payload: { nom?: string; prenom?: string; email?: string; telephone?: string },
@@ -29,6 +33,27 @@ export async function updateUser(
         if (typeof error === "object" && error !== null && "code" in error && (error as { code?: string }).code === "23505") {
             createHttpError(409, "Email already in use");
         }
+        throw error;
+    }
+}
+
+export async function updateUserRole(
+    id: number,
+    payload: { role?: string },
+) {
+    const role = payload.role?.trim();
+    if (!role || !["agent", "superviseur", "admin"].includes(role)) {
+        createHttpError(400, "role must be one of: agent, superviseur, admin");
+    }
+
+    const user = await findUserById(id);
+    if (!user) {
+        createHttpError(404, "User not found");
+    }
+
+    try {
+        return await updateUserById(id, { role });
+    } catch (error) {
         throw error;
     }
 }

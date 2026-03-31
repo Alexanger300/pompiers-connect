@@ -1,4 +1,5 @@
 import {
+    findAllSuivis,
     findSuiviById,
     findSuiviByUserId,
     updateSuivi,
@@ -22,6 +23,20 @@ export async function getSuiviById(id: number) {
 
 export async function getSuiviByUserId(userId: number) {
     return await findSuiviByUserId(userId);
+}
+
+export async function getAllSuivis(filters: {
+    userId?: number;
+    estValide?: boolean;
+}) {
+    return findAllSuivis(filters);
+}
+
+export async function getPendingSuivis(filters: { userId?: number }) {
+    return findAllSuivis({
+        userId: filters.userId,
+        estValide: false,
+    });
 }
 
 export async function updateSuiviContent(

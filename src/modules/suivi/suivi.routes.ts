@@ -7,9 +7,21 @@ import {
     updateSuivi,
     listFormationItems,
     getFormationItem,
+    listAllSuivis,
+    listPendingSuivis,
 } from "./suivi.controller";
 
 const router = Router();
+
+router.get("/admin", authenticate, requireRole("admin", "superviseur"), listAllSuivis);
+router.all("/admin", (_req, res) => {
+    res.status(405).json({ message: "Method not allowed. Use GET /suivi/admin" });
+});
+
+router.get("/pending", authenticate, requireRole("admin", "superviseur"), listPendingSuivis);
+router.all("/pending", (_req, res) => {
+    res.status(405).json({ message: "Method not allowed. Use GET /suivi/pending" });
+});
 
 // Public routes for listing and fetching formation items
 router.get("/formation-items", authenticate, listFormationItems);

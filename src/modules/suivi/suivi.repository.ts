@@ -11,6 +11,13 @@ export type SuiviFormation = {
     donneesProgressionJson: Record<string, any>;
 };
 
+export type SuiviFormationAdminView = SuiviFormation & {
+    userEmail: string | null;
+    userNom: string | null;
+    userPrenom: string | null;
+    formationTitre: string | null;
+};
+
 export type FormationItem = {
     id: number;
     titre: string;
@@ -28,6 +35,16 @@ function mapSuiviRow(row: any): SuiviFormation {
         dateValidation: row.date_validation,
         commentaires: row.commentaires,
         donneesProgressionJson: row.donnees_progression_json || {},
+    };
+}
+
+function mapSuiviAdminRow(row: any): SuiviFormationAdminView {
+    return {
+        ...mapSuiviRow(row),
+        userEmail: row.users?.email ?? null,
+        userNom: row.users?.nom ?? null,
+        userPrenom: row.users?.prenom ?? null,
+        formationTitre: row.formation_items?.titre ?? null,
     };
 }
 
@@ -91,6 +108,34 @@ export async function findSuiviByUserId(userId: number): Promise<SuiviFormation[
     }
 
     return (data || []).map(mapSuiviRow);
+}
+
+export async function findAllSuivis(filters: {
+    userId?: number;
+    estValide?: boolean;
+}): Promise<SuiviFormationAdminView[]> {
+    let query = supabase
+        .from("suivi_formation")
+        .select(
+            "id, user_id, item_id, est_valide, progression_pourcentage, date_validation, commentaires, donnees_progression_json, users(email, nom, prenom), formation_items(titre)",
+        )
+        .order("id", { ascending: false });
+
+    if (filters.userId !== undefined) {
+        query = query.eq("user_id", filters.userId);
+    }
+    if (filters.estValide !== undefined) {
+        query = query.eq("est_valide", filters.estValide);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+        console.error("Error fetching admin suivis:", error);
+        throw { status: 500, message: "Failed to fetch admin suivis" };
+    }
+
+    return (data || []).map(mapSuiviAdminRow);
 }
 
 export async function updateSuivi(
