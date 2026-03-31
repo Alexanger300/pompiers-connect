@@ -15,7 +15,7 @@ function parseAuthenticatedUserId(req: Request): number {
     return userId;
 }
 
-export async function postNotificationCallbackRequest(
+export async function postTargetedNotificationRequest(
     req: Request,
     res: Response,
     next: NextFunction,
@@ -31,7 +31,7 @@ export async function postNotificationCallbackRequest(
         });
 
         res.status(202).json({
-            message: "Notification callback requested",
+            message: "Targeted notification requested",
             id: result.id,
             recipients: result.recipients,
         });

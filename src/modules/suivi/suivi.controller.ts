@@ -76,7 +76,21 @@ export async function getSuiviDetail(
             return;
         }
 
+        if (!req.userId) {
+            res.status(401).json({ message: "Unauthorized" });
+            return;
+        }
+
         const suivi = await getSuiviById(suiviId);
+        const requesterId = parseInt(req.userId, 10);
+        const isManager = req.userRole === "admin" || req.userRole === "superviseur";
+        const isOwner = requesterId === suivi.userId;
+
+        if (!isOwner && !isManager) {
+            res.status(403).json({ message: "Forbidden" });
+            return;
+        }
+
         res.status(200).json(suivi);
     } catch (error) {
         next(error);

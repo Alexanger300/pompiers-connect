@@ -68,10 +68,14 @@ export async function createNotificationRecord(data: {
 export async function updateNotificationStatus(
     id: number,
     status: string,
+    recipientCount?: number,
 ): Promise<NotificationRecord> {
     const { data, error } = await supabase
         .from("notifications")
-        .update({ status })
+        .update({
+            status,
+            ...(recipientCount !== undefined ? { recipient_count: recipientCount } : {}),
+        })
         .eq("id", id)
         .select(
             "id, type, sender_user_id, title, message, data, recipient_user_ids, recipient_count, status, created_at",

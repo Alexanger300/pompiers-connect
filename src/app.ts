@@ -7,6 +7,7 @@ import usersRoutes from "./modules/users/users.routes";
 import suiviRoutes from "./modules/suivi/suivi.routes";
 import disponibilitesRoutes from "./modules/disponibilites/disponibilites.routes";
 import notificationsRoutes from "./modules/notifications/notifications.routes";
+import devicesRoutes from "./modules/devices/devices.routes";
 import { errorHandler } from "./middlewares/errorHandler";
 import { notFound } from "./middlewares/notFound";
 
@@ -28,6 +29,7 @@ app.use("/users", usersRoutes);
 app.use("/suivi", suiviRoutes);
 app.use("/disponibilites", disponibilitesRoutes);
 app.use("/notifications", notificationsRoutes);
+app.use("/devices", devicesRoutes);
 
 // Compatibility prefix for environments/frontends that call routes under /api.
 app.use("/api/auth", authRoutes);
@@ -35,6 +37,7 @@ app.use("/api/users", usersRoutes);
 app.use("/api/suivi", suiviRoutes);
 app.use("/api/disponibilites", disponibilitesRoutes);
 app.use("/api/notifications", notificationsRoutes);
+app.use("/api/devices", devicesRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

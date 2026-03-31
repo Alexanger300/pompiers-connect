@@ -6,7 +6,7 @@ import {
     deleteNotificationController,
     listNotificationsController,
     postBroadcastNotificationRequest,
-    postNotificationCallbackRequest,
+    postTargetedNotificationRequest,
 } from "./notifications.controller";
 
 const router = Router();
@@ -17,13 +17,13 @@ router.all("/", (_req, res) => {
 });
 
 router.post(
-    "/callback",
+    "/targeted",
     authenticate,
     requireRole("admin", "superviseur"),
-    postNotificationCallbackRequest,
+    postTargetedNotificationRequest,
 );
-router.all("/callback", (_req, res) => {
-    res.status(405).json({ message: "Method not allowed. Use POST /notifications/callback" });
+router.all("/targeted", (_req, res) => {
+    res.status(405).json({ message: "Method not allowed. Use POST /notifications/targeted" });
 });
 
 router.post(

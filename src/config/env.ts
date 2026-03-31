@@ -10,6 +10,11 @@ function getEnv(key: string, defaultValue?: string): string {
     return value || defaultValue!;
 }
 
+function getOptionalEnv(key: string): string | undefined {
+    const value = process.env[key];
+    return value && value.trim() ? value.trim() : undefined;
+}
+
 export const config = {
     // Application
     nodeEnv: getEnv("NODE_ENV", "development"),
@@ -34,8 +39,9 @@ export const config = {
     smtpFrom: getEnv("SMTP_FROM"),
 
     // Notifications
-    mobileNotificationCallbackUrl: getEnv("MOBILE_NOTIFICATION_CALLBACK_URL"),
-    mobileNotificationCallbackSecret: getEnv("MOBILE_NOTIFICATION_CALLBACK_SECRET", ""),
+    expoAccessToken: getOptionalEnv("EXPO_ACCESS_TOKEN"),
+    expoPushAndroidEnabled: getEnv("EXPO_PUSH_ANDROID_ENABLED", "true") === "true",
+    expoPushIosEnabled: getEnv("EXPO_PUSH_IOS_ENABLED", "false") === "true",
 };
 
 // Validation

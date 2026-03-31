@@ -52,6 +52,20 @@ CREATE TABLE notifications (
 CREATE INDEX idx_notifications_sender ON notifications(sender_user_id);
 CREATE INDEX idx_notifications_created_at ON notifications(created_at);
 
+CREATE TABLE user_devices (
+	id SERIAL PRIMARY KEY,
+	user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	platform TEXT NOT NULL CHECK (platform IN ('android', 'ios')),
+	push_token TEXT UNIQUE NOT NULL,
+	device_name TEXT,
+	is_active BOOLEAN NOT NULL DEFAULT TRUE,
+	last_seen_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_user_devices_user_id ON user_devices(user_id);
+CREATE INDEX idx_user_devices_platform ON user_devices(platform);
+
 -- --- 4. VOLET 1 : COLLECTE DES DISPONIBILITES ---
 CREATE TABLE disponibilites (
 	id SERIAL PRIMARY KEY,
