@@ -25,7 +25,7 @@
       "backgroundColor": "#ffffff"
     },
     "extra": {
-      "apiUrl": "http://localhost:4000",
+      "apiUrl": "https://pompiers-connect.vercel.app",
       "eas": {
         "projectId": "96a8929d-40b0-40c0-803c-33783cd94fb9"
       }
