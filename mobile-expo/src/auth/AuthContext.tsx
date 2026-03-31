@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { authApi, storage } from '../api/client';
+import { registerPushDeviceSilently } from '../notifications/registerDevice';
 import type { User } from '../types';
 
 type AuthContextValue = {
@@ -26,6 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const me = await authApi.me();
         setUser(me);
+        void registerPushDeviceSilently().catch(() => {});
       } catch {
         await storage.clear();
         setUser(null);
@@ -44,6 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async login(email, password) {
         const nextUser = await authApi.login(email, password);
         setUser(nextUser);
+        void registerPushDeviceSilently().catch(() => {});
       },
       async logout() {
         await authApi.logout();

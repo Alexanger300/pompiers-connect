@@ -34,12 +34,19 @@ module.exports = ({ config }) => {
     config?.extra?.apiPrefix ||
     '';
 
+  const webAppUrl =
+    process.env.EXPO_PUBLIC_WEB_APP_URL ||
+    process.env.WEB_APP_URL ||
+    config?.extra?.webAppUrl ||
+    'https://pompiers-connect.vercel.app';
+
   return {
     ...config,
     extra: {
       ...(config.extra || {}),
       apiUrl,
       apiPrefix,
+      webAppUrl,
       eas: {
         ...(config.extra?.eas || {}),
       },
