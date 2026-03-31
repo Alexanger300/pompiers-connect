@@ -7,9 +7,16 @@ const REFRESH_TOKEN_KEY = 'pompiers_refresh_token';
 const USER_KEY = 'pompiers_user';
 
 const apiUrlFromConfig = Constants.expoConfig?.extra?.apiUrl as string | undefined;
+const apiPrefixFromConfig = (Constants.expoConfig?.extra?.apiPrefix as string | undefined)?.trim();
 const API_BASE_URL = (apiUrlFromConfig || 'http://localhost:4000').replace(/\/$/, '');
-const CANDIDATE_PREFIXES = ['', '/api'];
-let preferredPrefix = '';
+const CANDIDATE_PREFIXES = Array.from(
+  new Set(
+    [apiPrefixFromConfig || '', '', '/api']
+      .map((prefix) => prefix.trim())
+      .filter((prefix) => prefix === '' || prefix.startsWith('/')),
+  ),
+);
+let preferredPrefix = CANDIDATE_PREFIXES[0] ?? '';
 
 function makeUrl(prefix: string, path: string) {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
